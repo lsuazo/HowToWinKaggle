@@ -1,0 +1,215 @@
+\documentclass[a4paper]{report}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{xcolor}
+
+\newcommand{\brown}{\color{brown}}
+
+\title{How to Win a Data Science Competition: Lean From Top Kagglers}
+\author{Coursera - National Research University Higher School of Economics}
+\date{2020}
+
+\begin{document}
+\maketitle
+
+\chapter{week1}
+\section{Introduction and Recap}
+\begin{itemize}
+  \item In Kaggle competitions, looks for {\bf Kernels} and/or {\bf Notebooks} - people share code that way and you can learn from them.
+  \item IMPORTANT: \underline{Insight is more important than algorithm}
+  \item IMPORTANT: Don't limit yourself - use advanced feature enginnering; run huge greedy calculations over night.
+  \item Recap of models/methods:
+    \begin{itemize}
+      \item Linear Methods
+	\begin{itemize}
+	  \item Logistic Regression; Support Vector Machine
+	  \item GOOD FOR: Sparse, high dimensional data
+	  \item BAD: Often linear separability is not a good approximation
+	\end{itemize}
+      \item Tree Based Methods
+	\begin{itemize}
+	  \item Decision Tree; Random Forrest; Gradient Boosted Decision Trees (GBDT)
+	  \item GOOD FOR: good default method for tabular data; good for non-linear relationships
+	  \item BAD FOR: hard to capture linear separation (say diagonal line in a 2D plane)
+	    \subitem from sklearn: can create over-complex trees that do not generalise data well - that is they are prone to overfitting
+	    \subitem trees can't extrapolate trends - they are good at interpolation not extrapolation
+	  \item \emph{Sklearn} has good random forrest; \emph{xgboost} has good GBDT
+	\end{itemize}
+      \item K-Nearest neighboors (KNN)
+	\subitem good for feature building
+      \item Neural Networks (NN)
+	\subitem good for images, sounds, texts and sequences
+	\subitem very good framework is \emph{pytorch}
+    \end{itemize}
+  \item Most powerfull methods currently are GBDS and NN
+  \item \underline{No free lunch theorem} - there is no single methods that beats all other methods for all applications
+  \item TODO: Look into H20 - open source, in-memory, distributed, fast and scalable machine learning and predictive analytics platform.
+    \subitem Looks quite interesting!
+  \item Hardware: SSD is critical; use cloud computing for anything too big.
+\end{itemize}	
+
+\section{Feature Preprocessing}
+\begin{itemize}
+  \item VIP: Strong connection between preprocessing and model choice
+  \item Scaling: $ x_i \to \alpha x_i$
+    \begin{itemize}
+      \item decision trees are not affected by a scaling tx, but non-tree based methods like NN, kNN and regularized linear models are very affected
+	\subitem in KNN - $x \to 0*x$ means ignore $x$, while $x \to \infty x$ means x dominates
+	\subitem Any methods that relies on gradient descent is sensitive to scaling (logistic regression, SVM, neural networks, etc. etc)
+      \item appraoch 1: Normalization (map to [0,1])
+	$$ x \to (x - x.min())/(x.max() - x.min) $$
+        \subitem code: {\color{brown} sklearn.preprocessing.MinMaxSaler}
+      \item approach 2: standardization (to $\mu=0, \sigma=1$)
+	$$ x \to (x - x.mean())/x.std()$$
+	\subitem code: {\brown sklearn.preprocessing.StandardScaler} 
+      \item Can use scaling to boost or attenuate signals - so scaling can be thought as just another hyperparameter to tune
+	\subitem In general, start with all features in the same scale and explore changing that.
+    \end{itemize}
+  \item Outliers
+    \begin{itemize}
+      \item linear models extremely sensitive
+      \item approach 1: {\bf Winsorization} - clip values between percentiles
+	\subitem code: {\brown UPPER, LOWER = np.percentile(x, [1,99]); y = np.clip(x, UPPER, LOWER)}
+	\subitem very common in finance
+      \item approach 3: Rank
+	\subitem good for knn and linear models when you don't have time to handle outliers by hand
+      \item approach 3: Other transformation
+	\subitem log transformation; raising to power < 1 - these have the benefit of bringing outliers in closer, and spreading things around zero apart
+    \end{itemize}
+  \item Missing values
+    \begin{itemize}
+      \item can be Nans, empty strings, outliers like -1, or -999
+      \item identifiying when a value actually represents a missing value can be challenging. Main tool: Histogram.
+      \item Sometimes missing values contain alot of useful info - there might be a reason the value is missing
+	\subitem So it is good to create new features like 'isMissing' or something like that.
+      \item 3 main imputation techniques
+	\begin{itemize}
+	  \item NaN $\to$ value outside range
+	    \subitem Gives trees possibilities to use this; Performance for linear models suffers greatly
+	    \subitem Curated data often comes with somethign like this already (as described above)
+	  \item NaN $\to$ mean, median or mode.
+	    \subitem good for linear methods; not good for trees
+	  \item Try to reconstruct NaN
+	    \subitem not easy; need to know something about the data generating process.
+	\end{itemize}
+      \item WARNING: \underline{be vary careful with early NaN imputation if you then build features based on imputed feature}
+	\subitem for exampl if you fill a cyclic feature with median values, and then construct diff as new feature - will lead to prominent discontinuities and flat zones.
+      \item some libraries, like XGBoost can handle NaNs automatically
+
+    \end{itemize}
+  \item For all all of these, you must learn the transformation from training data, and then apply the same one on testing. Sklearn Transformation API (used by the transformations above) allows you to do this. VERY GOOD.
+  \item USEFUL TRICK: create different predictors from same feature using different preprocessing techniques. 
+  \item USEFUL TRICK: Mix models that are trained on different preprocessed versions of the data
+\end{itemize}
+
+\section{External reading}
+\begin{itemize}
+  \item FROM SKLEARN
+    \begin{itemize}
+      \item when data is sparse, you don't want a scaler that moves zeros. Think about nature of your data to chose scalar.
+      \item Transfromer API: {\brown scaler = sklearn.Preprocessing.StandardScaler().fit(X\_train); x\_test\_scaled = scaler(X\_test)}
+      \item many estimators in sklearn expect features to look more or less $\sim$ N(0,1)
+      \item VIP: Note l1 and l2 regularizes assume all features centered around zero and have variance in the same order.
+      \item other useful tx:
+	\begin{itemize}
+	  \item preprocessing.Normalizer() - scaling individual samples to have unit norm (useful when estimating pair similarity via dot prod)
+	  \item preprocessing.OneHotEncoder(), preprocessing.OrdinalEncoder()
+	  \item preprocessing.KBinDiscretizer(n\_bins, encode).fit() - different strategies available
+	    \subitem histograms focus on counting features in particular bin, whereas dsicretizers focus on labeling features with bin
+	\end{itemize}
+    \end{itemize}
+  \item Sebastian Raschka
+    \begin{itemize}
+      \item Tree based classification is probably the only scale invariant algo
+      \item VIP: when using PCA, it is better to standardize (mean 1, std 0) than just normalize (map to [0,1]) - scaling affects covariance
+	\subitem cool example doing PCA and then bayes classifier on top - compar prediction score.
+    \end{itemize}
+  \item Jason Brownlee - Discover feature engineering: ``Most algorithms are standard - we spend most of our efforts on feature engineering''
+  \item Rahul Agarwal - Best practices in feature engineering
+    \begin{itemize}
+      \item LogLoss clipping technique: clip prediction prob to [0.05. 0.95]  when using log loss metric - it penalizes heavily being very certain and wrong
+      \item Use PCA for rotation, not only dim rec
+      \item sometimes add interaction features, A*B, A/B, A+B, A - B
+    \end{itemize}
+\end{itemize}
+
+\section{Feature Generation}
+\begin{itemize}
+  \item encodings categorical/ordinal
+    \begin{itemize}
+      \item label encoding: map categories to 1,2,3,4\ldots
+	\subitem good for tree based methods, not good for knn or linear (because it assume order and proportionality in labels - moreover dependence is likely not-linear)
+	\subitem code: {\brown sklearn.preprocessing.LabelEncoder()} or {\brown pd.factorize()}
+      \item Frequency encoding: map to numerical value representing frquency of category
+	\subitem can help trees use less splits
+	\subitem this is even sometimes useful in linear models
+      \item one-hot encoding: create indicator variable for each category
+	\subitem these can be good for linear methods, but in general slow down methods (explosion of features) and might not help (specially trees)
+	\subitem though will help tree if target depends on lbael encoded feature in a very non linear way
+	\subitem code: {\brown pd.get\_dummies()} or {\brown sklearn.preprocessing.OneHotEncoder()}
+    \end{itemize}
+  \item Datetime and coordinates
+    \begin{itemize}
+      \item Very different than simple numerical or categorical because we can interpret their meaning - they have much context
+      \item dates and times can lead to two  main types of features
+	\begin{itemize}
+	  \item moments in a period (ie using periodicity of datetime)
+	    \subitem ex: day of week, day of month, month in year, etc.  Or minute value, hour value, etc.
+	    \subitem useful to capture repetitive pattern in data
+	  \item time since/to event
+	    \subitem can be row independent: years since 2000, for all rows (so all rows have same reference)
+	    \subitem row dependent: days since last holiday (or till next holiday) - two rows can be referring to different holidays
+	\end{itemize}
+      \item very useful to diffs between two date columns
+      \item once you generate new features, numerical or categorical, preprocess them accordingly
+      \item coordinates
+	\begin{itemize}
+	  \item typically you want to calculate distance to points of interest (nearest hospital, school, etc) 
+	  \item very useful to calculate aggregated statistics for objects around an area
+	    \subitem ex: \# of flats around a point -> proxy for popularity of area
+	    \subitem ex: mean price of flats around a point -> gives sense of price of area.
+	\end{itemize}
+    \end{itemize}
+  \item Collection of tricks
+    \begin{itemize}
+      \item separte price into integer part and fractional part - can utilize differences in peoples \emph{perception} of a price
+      \item Create feature, 'isRoundNumber' - people often use numers like 5 and 10, while robots can use many decimals.
+      \item One-hot encode interaction between categorical features [just concatenate strings and OHE result]
+	\subitem Not so useful in tree based models, because they can easily approximate this with individual categories.
+      \item Sometimes simple multiplication, or division of features makes a huge difference.	
+	\subitem linear models can't approximate these, and trees have a very hard time approximating them.
+      \item sometimes useful to add slightly rotated coordinate system - particularly when using trees. 
+	\subitem ex: if a particular street happens to be a good division, but that street is not algined with coordinates, then tree uses many split to approximate.
+	\subitem hard to know what rotation to use a priori - so add several and check effect.
+    \end{itemize}
+\end{itemize}
+
+\section{Feature Extraction From Texts and Images}
+\begin{itemize}
+  \item For Text\ldots
+  \item Preprocessing: 1) lowercase, 2) lemmatization, 3) stemming, 4) remove stopwords
+  \item feature extraction: Bag of words - column per word in corpus, row perd doc, count ocurrences
+	\subitem can extend to n-grams, of either words of letters
+   \item Post processing: TFiDF (Term Frequency and Inverse document frequency)
+   \item OR \ldots
+   \item embeddings (word2vec, or others)
+     \begin{itemize}
+       \item Still use preprocessing
+       \item create vector representation of words in text
+       \item uses nearby words (unsupervised)
+       \item often resulting vector space has interpretable operations
+       \item training can take a long time - check for pretrained
+     \end{itemize}
+   \item BOW and Word2Vec often give very different results - use bott together
+   \item for images 
+     \begin{itemize}
+       \item look for pretained models and do some fine tunning
+       \item use image augmentation to increase training samples (crops, rotations, adding noise, etc.)
+	 \subitem reduces overfitting
+     \end{itemize}
+\end{itemize}
+
+\section{Questions}
+\begin{itemize}
+  \item	in GBM\_drop\_tree notebook - why are raw predictions - the output of the staged\_decision\_function - approaching $\pm 8$? (I assume it has to do with depth 3 choice of trees, but still, shouldn't output be close to $\pm1$ which is actual y-values?
+\end{itemize}
+\end{document}

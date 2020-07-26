@@ -1,0 +1,3 @@
+Things to try:
+- separate prices into integer parts and fractional parts
+- create time since last holiday and time to next holiday features
