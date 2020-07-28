@@ -1,3 +1,9 @@
-* sample file submission - 1.23646
+* sample file submission (constant 0.5) - 1.23646
 * [2020/7/26] mean of historical fillna(0) - 2.94933
 	- fillna(0.5) - 2.95621
+* [2020/7/27] mean of historical novembers fillna(0) - 3.85807
+* [2020/7/27] constant 0.6 - 1.25779
+	- constant 0.4 - 1.22295 (improvement)
+	- constant 0.25 -  1.21791 (improvement) - CURRENT BEST
+	- constant 0 - 1.25011 
+* [2020/7/28] individual shop random forrest using only previous 24 months items purchases - 2.16805
