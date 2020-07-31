@@ -4,6 +4,13 @@
 * [2020/7/27] mean of historical novembers fillna(0) - 3.85807
 * [2020/7/27] constant 0.6 - 1.25779
 	- constant 0.4 - 1.22295 (improvement)
-	- constant 0.25 -  1.21791 (improvement) - CURRENT BEST
+	- constant 0.25 -  1.21791 (improvement) 
 	- constant 0 - 1.25011 
 * [2020/7/28] individual shop random forrest using only previous 24 months items purchases - 2.16805
+	* this one contains sliding window of all previous data, window length 24 months
+* [2020/7/31] submitted just Oct2015 values with fillna 0 - 8.53027
+* [2020/7/31]- CURRENT BEST single RF for all shop/items - 24 previous months of data (fillna 0), clipped preds [0,20] - 1.07988 
+	- no clipped predictors -  2.11932
+
+
+
