@@ -3,6 +3,20 @@
 \usepackage{xcolor}
 
 \newcommand{\brown}{\color{brown}}
+\renewcommand{\t}{\hspace*{0.5cm}}
+
+
+\newenvironment{tightcenter}{
+  \setlength\topsep{0pt}
+  \setlength\parskip{0pt}
+  \begin{center}
+  }{
+  \end{center}
+}
+
+\newenvironment{codesnip}[1]
+{\begin{tightcenter}\begin{minipage}{.85\textwidth}#1}
+{\end{minipage}\end{tightcenter}}
 
 \title{How to Win a Data Science Competition: Lean From Top Kagglers}
 \author{Coursera - National Research University Higher School of Economics}
@@ -212,4 +226,107 @@
 \begin{itemize}
   \item	in GBM\_drop\_tree notebook - why are raw predictions - the output of the staged\_decision\_function - approaching $\pm 8$? (I assume it has to do with depth 3 choice of trees, but still, shouldn't output be close to $\pm1$ which is actual y-values?
 \end{itemize}
+
+\chapter{Week 2}
+\section{EDA}
+\begin{itemize}
+  \item VIP: \underline{\bf EDA is key}
+    \subitem Kaggle CEO says two apporaches: 1) is EDA other is 2) deep NN and pass everything. They have different domains in which they work better.
+  \item Steps:
+    \begin{enumerate}
+      \item Get Domain knowledge - google, read wiki, read state of the art (put in the time!)
+      \item Check whether values in data set agree with domain knowloedge - var ranges, typos, etc. (systematic errors can be very useful info)
+      \item KEY: figure out the generation process used in the data - must try to mimic to set up proper validation scheme.
+	\subitem perhaps they did random sample; perhaps they oversampled a class to balance out; some times train and test set are produce very differently. INVESTIGATE
+    \end{enumerate}
+  \item Exploring Anonimized data
+    \begin{itemize}
+      \item anonimized data is data which orgranizers intentionally change so as to not reveal some information  (ex: replace words with hash values, or col names with x1, x2 ..)
+      \item Things to try:
+	\begin{itemize}
+	  \item try to decode (very diffiicult, and most of the time, can't do it)
+	  \item guess the meaning of the column 
+	    \subitem cool example was trying to unstardadize a numerical column, by reverse engineering the mean and std dev, to find out original column was year born
+	  \item guess the type: numeric, categorical, etc.   - this is generally doable
+	  \item find out how feature relate to each other - find pairwise relationships (scatter plots) or even groups (correlatio plots, etc)
+	\end{itemize}
+      \item tip: label encode using pandas factorize (encodes based on order of appearance)
+	\subitem {\color{brown} for c in train.columns[train.dtypes ==  'object']: x[c] = x[c].factorize()[0]}
+      \item \underline{\bf VIP TIP}: fit a random forrest and then use {\color{brown} plt.plot(rf.feature\_importances\_} - this can tell you which features you should work on most.
+    \end{itemize}
+\end{itemize}	
+
+\section{visualizations}
+\begin{itemize}
+  \item EDA is an art, and visualizations are our tools
+  \item Plots to explore individual features
+  \item VIP: \underline{Never make a conlusion from a single plot!} if you have a hypothesis, try to come up with several different plots that could disprove it!
+    \begin{itemize}
+      \item {\color{brown} plt.hist}
+	\subitem can be misleading - vary bin nums. Also zoom in.
+      \item {\color{brown} plt.plot(x,'.')}
+	\subitem convenient not to connect points with line segments - just use dots
+	\subitem if horizontal lines appear, then lots of repeated values
+	\subitem if vertical patterns, then data is not shuffled
+      \item {\color{brown} plt.scatter(range(len(x), x, c=y)} - very good for looking for separation in the classes based on that feature.
+    \end{itemize}
+  \item Explore feature relationships
+    \begin{itemize}
+      \item {\color{brown} plt.scatter(x1, x1)} - \underline{One of the best tools!}
+	\subitem usually color by class label too
+	\subitem for regression used heaptmap type colors, or visualize target value as point size
+  	\subitem TIP: useuful to overlap colored train data with uncolored test data 
+	\subitem scatter plots can lead to finding mathematical relations between features (like $x1 \leq x2$) - use these to generate new features like diff or ratio
+	\subitem if small number of features: {\color{brown} pd.scatter\_matrix(df)}
+      \item large scale feature similarity: {\color{brown} df.corr()} and {\color{brown} plt.matshow()}
+	\subitem instead of corr, try to create matrices like: how many times in one feature greater than the other (this can spot cummulative features), or how many distinct combinations of these two features in data exist (can spot relationships between labels)
+	\subitem really  cool algorithm for grouping based on these corr values: {\bf spectral biclustering algorithm} - {\color{red}LOOK INTO THIS!}
+      \item {\color{brown} df.mean().plot(style='.') }
+	\subitem particularly if you sort the columns based on that statistic - might see groups
+      \item AND MANY MORE - BE CREATIVE
+    \end{itemize}
+  \item if you find groups of related features, it is often good to generate new features like a mean value of the group, etc.
+  \item nice code when overlapping values:\\
+    def jitter(data, stdev):\\
+    \hspace*{1cm} N  = len(data)\\
+    \hspace*{1cm} return data + np.random.rand(N)*stdev\\
+plt.scatter(jitter(x, sigma), jitter(y, sigma), c=y)
+\end{itemize}
+
+\section{Dataset cleaning and things to check}
+\begin{itemize}
+  \item Find (and discard) features that are constant in train and test
+    \subitem {\color{brown} traintest.nunique(axis =1) == 1}
+    \subitem if constant in training and non-constant in test, still remove
+  \item find and remove duplicate features
+    \subitem {\color{brown} traintest.T.drop\_duplicates()}
+    \subitem if duplicate categorical but with diff cat names label encode first, using factorize()!!\\
+  for f in categorical\_feats:\\
+  \hspace*{1cm} train[f] = traintest[f].factorize()\\
+  traintest.T.drop\_duplicates()
+  \item check for duplicate rows
+    \subitem check if duplicate rows have diff targets - if so, understand why!
+  \item check if train and test have common rows - if so, why?
+  \item check if data is shuffled (plot feature or target vs row index)
+    \subitem if not shuffled, high chace leakage exists
+\end{itemize}
+
+\section{Validation}
+\begin{itemize}
+  \item Nice code
+    \begin{codesnip}{\brown}
+      def hist\_it(feat): \\
+      \t plt.figure(figsize=(16,4))\\
+      \t feat[Y == 0].hist(bins=range(int(feat.min()), int(feat.max()+2)), normed=True, alpha=0.8)
+      \t feat[Y == 1].hist(bins=range(int(feat.min()), int(feat.max()+2)), normed=True, alpha=0.8)
+      \t plt.ylim((0,1))
+
+    \end{codesnip}
+  \item Usually convenient to concatenate train and test, and do all feature engineering with result (but not always)
+
+
+\end{itemize}
+
+
+
 \end{document}

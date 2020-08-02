@@ -1,0 +1,9 @@
+8/02/20202
+* think about statistical properties of different cv strategies - random shuffle, vs k-fold, vs LOO
+	- example experiment: take a set of data, split into train and validate. Train model on train piece. Question is, should we validate once on whole validate set, or should we split that into subsets, validate on each and aggregate results? 
+	- if data size not the problem, is there any reason to choose k-fold/LOO over random shulffle?
+
+
+7/?/2020
+* start kaggle team, find experts
+	- vasily?
