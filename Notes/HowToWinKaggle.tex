@@ -254,6 +254,7 @@
 	\subitem {\color{brown} for c in train.columns[train.dtypes ==  'object']: x[c] = x[c].factorize()[0]}
       \item \underline{\bf VIP TIP}: fit a random forrest and then use {\color{brown} plt.plot(rf.feature\_importances\_} - this can tell you which features you should work on most.
     \end{itemize}
+  \item VIP: \underline{Linear models can eaily extract sums and differences, but tree based methods cannot!!}
 \end{itemize}	
 
 \section{visualizations}
@@ -264,10 +265,11 @@
     \begin{itemize}
       \item {\color{brown} plt.hist}
 	\subitem can be misleading - vary bin nums. Also zoom in.
+	\subitem if see alot of thinks like 12, 24, 26 - i.e. separated by same amount then generate feature x \% 12 (or whatever the appropriate number)
       \item {\color{brown} plt.plot(x,'.')}
 	\subitem convenient not to connect points with line segments - just use dots
-	\subitem if horizontal lines appear, then lots of repeated values
-	\subitem if vertical patterns, then data is not shuffled
+	\subitem if horizontal lines appear, then lots of repeated values - IN THIS CASE, CREATE FEATURE THAT COUNTS HOW MANY COLS SAME IN THE GROUP - or feature for more nuanced pattern in group.
+	\subitem if vertical patterns, then data is not shuffled - IN THIS CASE ADD ROW INDEX AS FEATURE
       \item {\color{brown} plt.scatter(range(len(x), x, c=y)} - very good for looking for separation in the classes based on that feature.
     \end{itemize}
   \item Explore feature relationships
@@ -287,10 +289,12 @@
     \end{itemize}
   \item if you find groups of related features, it is often good to generate new features like a mean value of the group, etc.
   \item nice code when overlapping values:\\
+    \begin{codesnip}{\brown}
     def jitter(data, stdev):\\
     \hspace*{1cm} N  = len(data)\\
     \hspace*{1cm} return data + np.random.rand(N)*stdev\\
-plt.scatter(jitter(x, sigma), jitter(y, sigma), c=y)
+	plt.scatter(jitter(x, sigma), jitter(y, sigma), c=y)
+      \end{codesnip}
 \end{itemize}
 
 \section{Dataset cleaning and things to check}
@@ -309,11 +313,7 @@ plt.scatter(jitter(x, sigma), jitter(y, sigma), c=y)
   \item check if train and test have common rows - if so, why?
   \item check if data is shuffled (plot feature or target vs row index)
     \subitem if not shuffled, high chace leakage exists
-\end{itemize}
-
-\section{Validation}
-\begin{itemize}
-  \item Nice code
+  \item Nice code - feature histograms
     \begin{codesnip}{\brown}
       def hist\_it(feat): \\
       \t plt.figure(figsize=(16,4))\\
@@ -322,11 +322,136 @@ plt.scatter(jitter(x, sigma), jitter(y, sigma), c=y)
       \t plt.ylim((0,1))
 
     \end{codesnip}
+  \item Nice code - compare categoricals
+    \begin{codesnip}{\brown}
+      train\_enc = pd.DataFrame(index = train.index)\\
+      for col in tqdm\_notebook(train.columns):\\
+      \t train\_enc[col] = train[col].factorize()[0] \\
+
+      dup\_cols = \{  \}
+      for i, c1 in enumerate(tqdm\_notebook(train\_enc.columns)):\\
+      \t for c2 in train\_enc.columns[i+1: ]:\\
+      \t\t if c2 not in dup\_cols and np.all(train\_enc[c1] ==  train\_enc[c2]):
+      \t\t\t dup\_cols[c2] == c1
+    \end{codesnip}
   \item Usually convenient to concatenate train and test, and do all feature engineering with result (but not always)
-
-
 \end{itemize}
 
+\section{Validation}
+\begin{itemize}
+  \item Validation is a piece of test data not used for fitting, but rather checking the value of the model over unseen data. 
+  \item Overffiting in general != Overfitting in competitions
+    \subitem former: train quality > test quality
+    \subitem latter: when quality in test is worse than expected
+  \item MAIN POINT: have train/validation split mimic the train/test split - THIS IS KEY. 
+    \subitem without this, you validation score does not represent your out of sample test score.
+    \subitem Sometimes it can be very challenging to figure out how train/test split was made. It is worth spending considerable time here if needed.
+  \item validation strategies
+    \begin{itemize}
+      \item  3 main: Holdout, K-fold, and leave one out.
+      \item holdout - usually a good choice when there is enough data
+	\subitem no overlap between train and validation
+      \item k-fold - basically repeated holdout, where entire data is partitioned into k validation sets - for each validation set, model is trained on complement. Final measure of performance is average over k folds.
+	\subitem core idea: every sample is used for validation exactly once
+	\subitem usually k=5 is a good starting point
+      \item LOO - is k-fold where k = len(train)
+	\subitem used only when there is very little data
+    \end{itemize}
+  \item usually houldout and k-fold on shuffled data not good when:
+    \begin{itemize}
+      \item unbalanced data sets (as far as classes)
+      \item multiclass classification with many classes
+    \end{itemize}
+  \item in these cases use {\bf stratification} - preserve the same target distribution in the different folds
+  \item these methods are also generally not good for time series data
+    \begin{itemize}
+      \item you generally need to make a time split - so if holdout, don't shuffle.
+	\subitem this emulates how time series data is received, and used
+      \item the time series version of k-fold, is a \emph{moving window cross validation} - this rely on capturing trends
+      \item OTOH, if for competiotn, test/train split did not use a time split, that means you have future data. Then USE it! And have your cv emulate (this is generally not the case)
+      \item models/features that rely on trends tend to be very different than those that rely on future data, so it is key to get this right.
+    \end{itemize}
+  \item main types of splits used in competitions
+    \begin{itemize}
+      \item random split (rowwise) - done when rows are fairly independent of each other
+      \item time based split
+      \item by ID - (typically several rows per ID)
+	\subitem test will have IDs not seen in train
+      \item combined - ex: date split for each ID independently
+      \item non-trivial
+    \end{itemize}
+  \item Typical problems encountered during validation
+    \begin{itemize}
+      \item Different folds lead to very different values
+	\subitem can happen when different folds are very different in nature: example, in competition, cross-validating with january vs february can be very different (number of holidays is very different) {\color{red} HINT HINT}
+	\subitem can also be caused by too little data, or data that is too diverse, or data that is inconsistent (i.e. similar samples with very different target values - error changes if they are both in train, or one and one)
+      \item {\bf leaderboard shuffle} - very different public/ private scores.
+      \item some solutions: increase k. Or redo k-fold with different seeds (can use one to get parameters and one to test)
+    \end{itemize}
+  \item submission stage problems: LB consistently higher (lower) than cv; LB uncorrelated with CV 
+    \subitem can be caused by train/test data comminb from diff distributions -- Best friend EDA: problem is typically that you haven't mimicked split correctly
+    \subitem Other trick: adjust solution based on LB - find optimal constant to add/subtract from your preductions based on public leaderboard score
+    \subitem most often problem comes from imbalanced classes. solution, try to mimic the split.
+    \subitem can also be casued by too little public test data; in this case just trust you CV
+\end{itemize}
+
+\section{Data leakages}
+\begin{itemize}
+  \item very bad, people get very sensitive, to exploit or not exploit? (shouldn't and often can't in real world)
+    \subitem When they exist, they tend to dominate
+  \item typical leaks
+    \begin{itemize}
+      \item future peaking [incorrect splits]
+      \item metadata
+      \item IDS sometimes contain information
+      \item row ordering
+      \item LB probing (can be used to extract what they call \emph{ground truth}
+    \end{itemize}
+\end{itemize}
+
+\section{Additional Material And Links}
+\begin{itemize}
+  \item CV in sklearn
+    \begin{itemize}
+      \item Validation is a way to fit hyperparameters of model without burning data
+      \item KEY: Preprocessing should also be learned from training, so it is good to use a {\bf pipeline} to combine prepreocessing with validation
+	\subitem ex:
+	\begin{codesnip}{\brown}
+	  from sklearn.pipeline import make\_pipeline\\
+	  clf = make\_pipeline(preprocessing.standardScaler(), svm.svc(c=1))\\
+	  cross\_val\_score(clf, X, y, cv=cv)
+	\end{codesnip}
+      \item random split: {\brown sklearn.model\_selection.train\_test\_split}
+      \item k-fold: {\brown sklearn.model\_selection.cross\_val\_score(df, x, y, cv=5, scoring='\ldots')}
+	\subitem can pass a cross-validation scheme to cv to have more control, or even a custom iterable yielding (test, train) splits
+	\subitem more flexible variant: cross\_validate
+      \item many cross validation iterators that can be used, for iid and not iid (grouped, imbalanced classes, time series)
+    \end{itemize}
+  \item Some dude's lessons
+    \begin{itemize}
+      \item always cv (not just v)
+      \item trust good CV method more than LB
+      \item for final submission picke two very different models (ie. from bagging of SVM, vs Random forrest, vs neural network, vs linear models)
+    \end{itemize}
+  \item Kaggle CEO lessons learned
+    \begin{itemize}
+      \item Use sklearn pipelines to avoid leakages, peaking, etc.
+      \item in 2011 random forrest won alot; in 2012 deep NN started dominating (at least vision and time series); in 2015 XGboost started dominating
+      \item Two main approaches to dominate
+	\begin{itemize}
+	  \item XGBoost with serious EDA
+	  \item deep NN with very little EDA
+	\end{itemize}
+      \item Top Kaggle participant attributes
+	\begin{itemize}
+	  \item creativity - create lots and lots of features
+	  \item Tenacity - keep working, not get despirited
+	  \item very good with statistics [avoid overfitting]
+	  \item good software practices [like VC]
+	\end{itemize}
+      \item suggestion: look at kaggle public data sets, and use their script forking
+    \end{itemize}
+\end{itemize}
 
 
 \end{document}
