@@ -1,6 +1,7 @@
 \documentclass[a4paper]{report}
 \usepackage[margin=0.5in]{geometry}
 \usepackage{xcolor}
+\usepackage{amsmath}		
 
 \newcommand{\brown}{\color{brown}}
 \renewcommand{\t}{\hspace*{0.5cm}}
@@ -451,6 +452,139 @@
 	\end{itemize}
       \item suggestion: look at kaggle public data sets, and use their script forking
     \end{itemize}
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Week 3}
+\section{Evaluation Metrics}
+\begin{itemize}
+  \item  Problem: Some metrics cannot be optimized efficiently. So need to come up with proxy metric, and find heuristics to transform optimized metric results to final submission.
+  \item also, if train and test sets are different, might need to modify optimization metric a bit (happens often in time series, where distribution changes over time)
+  \item interesting example metrix (comes from finance)
+    \begin{equation}
+      Loss(\hat{y}_i, y_i) = 
+      \begin{cases}
+	|y_i - \hat{y}_i| & \mbox{ if trend predicted correctly} \\
+	(y_i - \hat{y}_i)^2 & \mbox{ if trend predicted incorrecly}
+      \end{cases}
+    \end{equation}
+    \subitem punishes one type of error much more.
+    \subitem Hard to optimize with an algorithm
+    \subitem in his case, he hacked the metric - it was all about making small predictions, and guessing right size (or something like that)
+  \item Do exploratory analysis of unusual metrics!
+  \item ALWAYS BUILD A BEST CONSTANT BASELINE (see below)
+\end{itemize}
+
+\subsection{Regression metrics}
+\begin{itemize}
+  \item MSE := Mean Squared Error
+    \begin{equation}
+      MSE = \frac{1}{N}\sum_{i=1}^N(y_i - \hat{y}_i)^2
+    \end{equation}
+      \subitem optimal constant is mean value of target
+    \item RMSE := square root of MSE
+      \subitem square root is to make units of error same as target
+      \subitem every MSE minimizer is a RMSE minimizer and vice versa
+      \subitem slight differentce in gradient descent, because
+      $$ \frac{\partial RMSE}{\partial \hat{y}_i} = \frac{1}{2\sqrt{MSE}} \frac{\partial MSE}{\partial \hat{y}_i} $$
+    \item R-squared
+      \begin{equation}
+	R^2 := 1 - \frac{MSE}{Var(Y)}
+      \end{equation}
+      where in this case Var is the biased 1/N type.
+      \subitem puts error on reasonable scale: 0 if prediction is no better than optimal constant (negative if worse) and 1 if prediction is perfect
+      \subitem to optimize $R^2$, just optimize MSE - just off by two constants
+    \item MAE := Mean Absolute Error
+      \begin{equation}
+        MAE := \frac{1}{N} \sum_{i=1}^N |y_i - \hat{y}_i|
+      \end{equation}
+      \subitem more robust than MSE (less penalty on extremes).
+      \subitem widely used in finance (of by \$10 is exactly two times worse than off by \$5)
+      \subitem optimal constant is median
+      \subitem choice on using MSE vs MAE depends on whether outliers data are bad data, or real data that is just rare.
+    \item Problem: 9 vs 10, is same error as 999 vs 1000 in all of the above - this leads to MSPE and MAPE
+    \item MSPE (:= mean squared percentage error)
+      \begin{equation}
+	MSPE = \frac{100}{N} \sum_{i=1}^N\left( \frac{y_i - \hat{y}_i}{y_i} \right)^2
+      \end{equation}
+    \item MAPE (:= Mean absolute percentage error) 
+      \subitem same but with L1 instead of L2.
+      \subitem These can be thought of weighted versions of MSE and MAE (with weights not summing to one)
+      \subitem optimal constants are weighted versions of mean and median.
+    \item RMSLE (:= Root mean square logarithmic error)
+      \subitem basically RMSE where you transform $y_i \to \ln(y_i + 1)$ (and same for hat version)
+      \subitem this one cares more about relative errors
+      \subitem error is assymetric, always better to be above than below
+      \subitem best constant is obtained by going to logspace, getting mean, and transforming back
+\end{itemize}
+
+\subsection{Classification Metrics}
+\begin{itemize}
+  \item notation: N is number of objects, L is number of classes, [a = b] is indicator function, 1 if arg is true, 0 otherwise.
+  \item Disitinguish between: {\bf hard prediction} - the actual predicted category, vs {\bf soft prediciotns} - the probability for each category
+  \item metric 1: Accuray
+    \begin{equation}
+      Accuracy = \frac{1}{N} \sum_{i=1}^N [\hat{y}_i = y_i]
+    \end{equation}
+    \subitem uses only hard predictions
+    \subitem best constant is most frequent class
+    \subitem bad metric with very unbalanced classes, bc best constant gets you really good score
+    \subitem difficult to optimize
+    \subitem doesn't care about confidence, just right or wrong.
+  \item LogLoss
+    \subitem for binary (1s, and 0s, specifically)	
+    \begin{equation}
+      LogLoss = - \frac{1}{N} \sum_{i=1}^N y_i \ln(\hat{y}_i) + (1-y_i)\ln(1-\hat{y}_i)
+    \end{equation}	
+    \subitem Multiclass generalization
+    \begin{equation}
+      LogLoss = - \frac{1}{N} \sum_{i=1}^N \sum_{l=1}^L y_{il} \ln(\hat{y}_{il})
+    \end{equation}	
+    \subitem in practice predictions clipped to avoid nans: min(max($\hat{y}, 10^{-15}), 1-10^{-15})$
+    \subitem Logloss penalizes severe mistakes!
+    \subitem best constanc for log loss is set $\alpha_i$ (prob class i) to frequency of ith class in target
+  \item AUC ROC (Aread under curve - receiver operating curve)
+    \subitem only for binary tasks
+    \subitem doesn't care about threshold, just ordering of predictions
+    \subitem HIS FAVORITE ONE - READ MORE ABOUT THIS!
+  \item Cohen's Kappa
+    \subitem basically rescales accuracy so that 0 is not 0 accuracy but instead the baseline prediction.
+    \subitem read more about this.
+\end{itemize}
+
+\section{Metric Optimization}
+\begin{itemize}
+  \item what we want to optimize is not always what the model optimizes
+    \subitem some metrics can be optimized directly by the libraries available: MSE, LogLoss, MAE,  etc
+    \subitem sometimes can use an equivalent loss: for example MSPE, RMSLE, can optimize MSE instead if done correctly	
+    \subitem someitmes have to use a different loss, and simply postprocess predictions and apply heuristics to adjust for target metric
+  \item One method that always works: {\bf early stopping}
+    \subitem train using one metric, and validate using another. Then stop training when validation on second metric is lowest.
+  \item some tricks:
+    \begin{itemize}
+      \item often cant optimise MSPE and MAPE out of the box; but you are allowed to pass sample weights. So you can recreate it.
+      \item another method for above is to resample dataset according to said weights 
+	\subitem leave test set as it. Usually resample many times and average.
+      \item for RMSLE just transform to log space, optimize MSE and then transforom predictions back
+      \item for classification - you often have to callibrate prediction; basically you fit another model to transform scale predictions appropriately (something simple like a linear model)
+      \item Sometimes just tune threshold using grid search
+    \end{itemize}
+\end{itemize}
+
+\section{extra readings}
+\begin{itemize}
+  \item All about Learning to Rank problem and some libraries that deal with it
+  \item read more when needed.
+\end{itemize}
+
+\section{Mean encoding}
+\begin{itemize}
+  \item main concept: use target to generate new features
+  \item aka likelihood encoding aka target encoding
+  \item simplest case: given a categorical variable, encode each level of that variable using the correspoinding target mean for that level
+  \item many pitfalls when it comes to doing this - can lead to leakage and overfitting
+    \subitem VIP: always train encoding on train data only!
 \end{itemize}
 
 
