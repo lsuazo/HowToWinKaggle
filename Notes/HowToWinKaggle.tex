@@ -581,11 +581,72 @@
 \section{Mean encoding}
 \begin{itemize}
   \item main concept: use target to generate new features
+    \subitem This often leads to more separable features, which leads to trees needing less depth to reach similar predicitive ability
+    \subitem the more non-linear the target dependency on the feature, the more effective mean encoding can be.
+    \subitem TIP: If increasing tree depth makes both in sample and out sample better, this is tell-tale sign that mean encoding is probably useful (some features probably have a tremendous number of important split points)
   \item aka likelihood encoding aka target encoding
   \item simplest case: given a categorical variable, encode each level of that variable using the correspoinding target mean for that level
   \item many pitfalls when it comes to doing this - can lead to leakage and overfitting
     \subitem VIP: always train encoding on train data only!
+  \item approaches:
+    \begin{itemize}
+      \item likelihood = (ones/(ones + zeros)) = mean(target)
+      \item weighted evidence = $ \ln(ones/zeros) * 100$
+      \item count = ones = sum(target)
+      \item diff = ones - zeros
+    \end{itemize}
+  \item regularization for encodings - 4 main approaches
+    \begin{itemize}
+      \item cross validation loop (robust)
+	\subitem split into k-folds (usually 4 or 5) and estimate encoding for values in each fold using only complement.
+	\subitem {\color{red} How you train this in train, and then use in validation/test?} Do you average the maps from the folds? Do you treat it as a new fold?
+	\subitem Careful - in extreme example, folds = num data, can end up with perfect leak of data
+      \item Smoothing
+      $$ \frac{mean(target)*nrows + alpha*globalmean}{nrows + alpha} $$
+      where nrows is nrows for that given category value, globalmean is the mean of target accross all category values, and alpha is a fixed constant that determines the strength of the smoothing.
+      \subitem This punishes rare category encoding.
+    \item Noise - just add random noise to target values before doing straight encoding
+      \subitem degrades quality of encoding on train data.
+      \subitem pretty unstable; must be tunes very carefully
+    \item Expanding Mean
+      \subitem sort data. Then use only rows from 0 to n-1 to calculate encoding for row n
+      \subitem {\color{red} How do we sort the data?} - straightforward when time series, but what if not?
+      \subitem this one introduces the least amount of leakage and requires no hyperparameter tuning - it is his favorite.
+    \end{itemize}
+  \item Extensions and generalizations
+    \begin{itemize}
+      \item in binary classification, mean is the only relevant statistic. For regression can use things like median, percentiels, std, bins, etc.
+      \item in multiclass classification, every feature with lead to L different encodings, one per class.
+	\subitem models often solve mutliclass in one-vs-all approach, so these encodings are a good way to give model additional info about other classes
+      \item many to many relations - one approach is to stack data, encode results, and then unstack and assign vector value to original, then convert that vector to a useful stat like mean, or std.
+	\subitem example: col1 - USERID, col2 - list of apps on phone, target - 0 or 1. Approach is to stack data, have one col for each User/app pair. Encode Apps, and then stack again - will lead to a vector of encoded values (apps) per user.
+      \item time series
+	\subitem can create very useful and complicate features - i.e. rolling statistics of target variables
+	\subitem example: for a given category, calculate mean from previous day, two days, previous week, etc.
+	\subitem also, can aggregate along different features. example: col1 Day, col2 user, col3, expense category, col4 amount spent - can do per user average of prev day spending; can also do per category spending for previous day, etc.
+	\subitem VIP: don't use future data
+      \item numerical features
+	\subitem for numerical features can bin and treat as categorical
+	\subitem one approach to binning is to fit tree on raw data, and encode based on tree splits
+	\subitem if a feature has many splits, it is a good idea to bin (probably using splits of tree)
+      \item Interactions
+	\subitem simialrly fit tree on raw
+	\subitem in resulting trees, look at neighboring splits (i.e. plot tree, and look at all neighboring nodes). The pairs that appear most often, probably have meaningful interaction.
+	\subitem then simply concatenate and encode as usual
+	\subitem LOOK INTO cat\_boost
+    \end{itemize}
 \end{itemize}
+
+\section{From Programming Excercise}
+\begin{itemize}
+    \item cool code: transform
+      \begin{codesnip}{\brown}
+	all\_data['item\_target\_encode'] = all\_data.groupby('item\_id')['target'].transform('mean')
+      \end{codesnip}
+      transform returns data frame with index like original df (using the mapping created by the aggregation)
+    \item For competition: \underline{Expanding mean scheme} - led to highest correlation of feat with target
+    \item For competition: preprocessing approach - for each month, they get all shops and all items, and create the cross product - and fill out with zeros any pair that doesn't have data
+  \end{itemize}	
 
 
 \end{document}
