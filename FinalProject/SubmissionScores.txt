@@ -11,6 +11,7 @@
 * [2020/7/31] submitted just Oct2015 values with fillna 0 - 8.53027
 * [2020/7/31]- CURRENT BEST single RF for all shop/items - 24 previous months of data (fillna 0), clipped preds [0,20] - 1.07988 
 	- no clipped predictors -  2.11932
+* [2020/8/25] - 12 month stacked rf 100-10 using ewms and simple target encoding - 3.15399
 
 
 
