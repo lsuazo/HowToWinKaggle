@@ -9,9 +9,15 @@
 * [2020/7/28] individual shop random forrest using only previous 24 months items purchases - 2.16805
 	* this one contains sliding window of all previous data, window length 24 months
 * [2020/7/31] submitted just Oct2015 values with fillna 0 - 8.53027
-* [2020/7/31]- CURRENT BEST single RF for all shop/items - 24 previous months of data (fillna 0), clipped preds [0,20] - 1.07988 
+* [2020/7/31]-  single RF for all shop/items - 24 previous months of data (fillna 0), clipped preds [0,20] - 1.07988 
 	- no clipped predictors -  2.11932
 * [2020/8/25] - 12 month stacked rf 100-10 using ewms and simple target encoding - 3.15399
+* [2020/8/26]- mod = xgb_model(num_boost_round=1000, max_depth=10, eta=0.4) - 3.02556  [num boos roudns was not being used here]	
+		* fitted_models, isscores, osscores, times = rolling_cross_validation(mod, full_data_months[-20:], num_stack_months=18, fit_final=True)
+	- tried 6.71014
+		* mod = xgb_model(num_boost_round=500, max_depth=20, eta=0.3, gpu_id=0, tree_method='gpu_hist')
+		* fitted_models, isscores, osscores, times = rolling_cross_validation(mod, full_data_months[-20:], num_stack_months=18, fit_final=True)
+	- tried same but clipped predictions to [0,20] ====> 1.06068 CURRENT BEST
 
 
 
