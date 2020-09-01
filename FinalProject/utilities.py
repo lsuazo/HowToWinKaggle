@@ -32,7 +32,7 @@ PRED_MONTH_COL_NAME = 'pred_month'
 
 def aggregate_monthly(sales_df):
     assert 'Month' in sales_df.columns, 'Month column not found'
-    return sales_df.groupby(['Month', 'shop_id', 'item_id']).agg({'item_cnt_day': np.sum, 'item_price': np.mean}).rename(columns={'item_cnt_day':'item_cnt_month'}).reset_index()
+    return sales_df.groupby(['Month', 'shop_id', 'item_id']).agg({'item_cnt_day': np.sum, 'item_price': np.mean}).rename(columns={'item_cnt_day':'item_cnt_month'})#.reset_index()
 
 
 def create_windowed_XY(df, fit_cols, append_pred_month=False, append_item_id=False, append_shop_id=False):
