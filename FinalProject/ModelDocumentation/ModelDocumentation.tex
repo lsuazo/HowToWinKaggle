@@ -1,0 +1,38 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{xcolor}
+
+\newcommand{\brown}{\color{brown}}
+
+\newenvironment{codesnip}[1]
+{\begin{tightcenter}\begin{minipage}{.85\textwidth}#1}
+{\end{minipage}\end{tighcenter}}
+
+
+\title{Model Documentation}
+\author{Luis Suazo}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Background}	
+\begin{itemize}
+  \item Competition Name: Predict Future Sales
+  \item Team Name: None
+  \item Private Leaderboard Score: TBA
+  \item Private Leaderboard Place: TBA
+  \item Name: Luis Suazo
+  \item Location: USA
+  \item Email: None
+  \item Academic Background: PhD in Theoretical Physics
+  \item Professional Background: Systematic Trader
+  \item Prior Experience: Data Science Education
+  \item Time Spent on Competition: Somewhere around 20 hours
+\end{itemize}	
+
+\section{Summary}
+* rolling causal crossvalidation - predict for each month	
+* used mean ecnoding alot with expoentially wieghted moving averages for feature generation
+
+\end{document}
