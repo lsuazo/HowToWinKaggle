@@ -17,7 +17,12 @@
 	- tried 6.71014
 		* mod = xgb_model(num_boost_round=500, max_depth=20, eta=0.3, gpu_id=0, tree_method='gpu_hist')
 		* fitted_models, isscores, osscores, times = rolling_cross_validation(mod, full_data_months[-20:], num_stack_months=18, fit_final=True)
-	- tried same but clipped predictions to [0,20] ====> 1.06068 CURRENT BEST
+	- tried same but clipped predictions to [0,20] 1.06068
+* [2020/9/9] more indicators, xgb 1000 rds, max_depth 5, eta 0.1  - 2.40032
+	- clipped to 100: 1.54944
+	- clipped to 50: 1.21521,
+	- clipped to 20: 1.04913 ====>  CURRENT BEST
+	- clipped to 10:  1.04959
 
 
 
