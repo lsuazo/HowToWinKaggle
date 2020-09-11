@@ -649,4 +649,86 @@
   \end{itemize}	
 
 
+\chapter{Week 4}
+\section{Hyperparameter tuning Part I}
+\begin{itemize}
+  \item VIP: \underline{Do not spend too much time tuning hyperparameters} - features, hacks, leaks, give much bigger boosts
+  \item Usually faster to do manual tuning - see results, make smart changes - than automatic tuning
+  \item Broadly speaking, can separate parameters into those that increasing parm leads to underfitting (constrain model power) and those that increasing leads to overfitting (increase model fitting power)
+  \item GBDT - increase power
+  \begin{itemize}
+    \item max\_depth (usual range 2-30, typically start around 7)
+    \item subsample (see also colsample\_bytree and colsmaple\_bylevel) - number of smapels to use when building each tree
+    \item eta (learning rate) (usual range 0.01 to 0.1)
+      \subitem if too high, model doesn't converge, if too low takes too long to learn
+    \item num\_boost\_round
+  \end{itemize}
+\item GBDT - regularizing parms
+  \begin{itemize}
+    \item min\_child\_weight - (wide range: 0, 5, 15, 300, etc) - akin to minimum number of instances that must be in each node (but more elaborate)
+      \subitem {\bf One of the most important parameters!}
+    \item lambda? alpha?
+  \end{itemize}
+\item RandomForrest - increase power
+  \begin{itemize}
+    \item max\_depth  
+      \subitem usually optimal is higher than XGBoost	- 10, 20, or higher.
+    \item max\_features - num feature to use in tree
+  \end{itemize}
+\item RF - regularizers
+  \begin{itemize}
+    \item min\_samples\_leaf
+  \end{itemize}
+\item RF - other
+  \begin{itemize}
+    \item N\_estimators - number of trees 
+      \subitem this is actually just good to increase - it both fits better and regularizes better
+      \subitem start with something small like 10, then go to something large like 300, and try to interpolate to find out what is sufficient
+    \item n\_jobs - number of cores
+      \subitem {\bf VIP: this defaults to 1 - so change it!}		
+  \end{itemize}
+\item Neural Network    
+  \subitem increase power: num of neurons, number of layers, batch size
+  \subitem regularization: L2, L1 for weights, dropout, drop connect, static drop connect (interesting and very powerful)
+\item Linear Models
+  \begin{itemize}
+    \item carefully tuned lightgbm proably beats SVM even on large data sets, but SVM do not require almost any tunning, which is very useful!
+    \item sklearn has SVC (SVM classifier) and SVR (SVM regressor) - these wrap liblinear and libsvm
+      \subitem must compile yourself for multi-core support
+    \item sklean also has logistic regression, linear regression + regularization, SGDClassifier/SGDRegressor	
+    \item for data that doesn't fit in memory, use Vowpal Wwabbit
+    \item regularization params: C, alpha, L1, L2,\dots
+      \subitem for SVM, start with very small C, like $10^{-16}$, and then increase by powers of 10
+  \end{itemize}	
+\item Other idea: average everything: choose some small spread in parameters, run and average
+  \subitem do this for different random initializations too - HELPS ALOT!
+\end{itemize}
+
+\section{Random Forrest Notebook Code}
+\begin{itemize}
+  \item {\brown rf = RandomForrestClassifier(n\_estimators = 500, max\_depth=4, n\_jobs=-1)}
+  \item {\brown rf.fit(Xtrain, Ytrain)}
+  \item get predictors for each tree
+    \begin{codesnip}{\brown}
+      predictors = [] \\
+      for tree in rf.estimators\_: \\
+      \t predictors.append(tree.predict\_proba(Xval)[None,:] \\
+	
+	predictions = np.vstack(predictions)  \# tensor size of (num trees, num objs, num classes)
+    \end{codesnip}
+  \item cumulative average
+    \begin{codesnip}{\brown}
+      cum\_mean = np.cumsum(predictions, axis=0)/np.arange(1, predictions.shape[0]+1)[:, None, None]
+    \end{codesnip}
+  \item get accuracy
+    \begin{codesnip}{\brown}
+      scores = [] \\
+      for pred in cum\_mean: \\
+      \t scores.append(accuracy\_score(Yval, np.argmax(pred, axis=1)))	\\
+      plt.plot(scores, linewidth=3)			
+    \end{codesnip}
+\end{itemize}
+
+
+
 \end{document}
