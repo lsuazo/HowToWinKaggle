@@ -729,6 +729,52 @@
     \end{codesnip}
 \end{itemize}
 
+\section{Extra Readings}
+Sklearn Tuning Hyperparms
+\begin{itemize}
+  \item use: {\brown estimator.get\_params()} - to see params
+  \item two generic sampling approaches: GridSearchCV (all combinations of params) and RandomizedSearchCV (sample parms from specified distribution)
+  \item These searches also allow nested estimators, like pipelines and voting classifiers.
+  \item VIP: There are some estimators that can efficiently fit some hyperparameters (usually regularizers) at the same time as fitting normal parameters.
+    \subitem ex: linear\_model.ElasticNetCV, linear\_model.LogisticRegressionCV
+  \item models that use bagging can estimate generalization error on what is left out -- {\bf out-of-bag error}
+\end{itemize}
+Gradient Boosting Hyperparameters :
+\begin{itemize}
+  \item {\bf boosting} - ensembles a set of weak learners. At any instance t the model outcomes are weighed based on the ouytcomes of the previous instant t-1. Outcomes predicted correctly are given a lower weight, and the ones missclassified are weighted higher.
+  \item bagging controls high variance; boosting controls both bias and variance
+  \item General approach for tuning:
+    \begin{itemize}
+      \item start with relatively high learning rate (say around 0.1) - and determine optimum number of trees for this learning rate (one that works but is still fast, say 40-70)
+      \item Tune tree speficic parameters
+	\begin{itemize}
+	  \item min\_samples\_split - should be about 0.5-1\% of total values  - if imbabalanced data, go with the smaller value
+	  \item min\_samples\_leaf - selected based on intution, used to prevent overfitting
+	  \item max\_depth - typically 5-8 (for 100k rows and 49 cols he chose 8 - I should probably choose more)
+	  \item max\_features - 'sqrt' - it is a general rule of thumb to start with the sqrt of number of features
+	  \item subsample  - 0.8 is good starting value
+	\end{itemize}
+      \item then reduce learning rate and increase trees by same factor. Do a couple of times. (all the way up to something like 2k trees)
+    \end{itemize}
+  \item he uses GridSerachCV
+  \item a good feature importance graph: use many of the variables, none with too much emphasis
+  \item XGboost advantages over sklearn.ensemble.GradientBoostingClassifier
+    \begin{itemize}
+      \item has regularization
+      \item much faster (parallel processing)
+      \item high flexibility - can customize optimization objectives and evaluation criteria
+      \item auto handles missing values
+      \item uses tree pruning
+      \item built in cross val
+      \item can continue from existing model
+    \end{itemize}
+\end{itemize}	
 
+
+\section{Tips And Tricks}
+\subsection{Alex Guschin}
+\begin{itemize}
+  \item
+\end{itemize}
 
 \end{document}
