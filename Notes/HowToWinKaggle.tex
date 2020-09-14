@@ -772,9 +772,195 @@ Gradient Boosting Hyperparameters :
 
 
 \section{Tips And Tricks}
-\subsection{Alex Guschin}
 \begin{itemize}
-  \item
+  \item Alex Guschin
+    \begin{itemize}
+      \item KEY: Come up with an idea (ie a feature, a model, etc) try it, and then analyze why your idea works or doesn't work. It will lead to newer/better/more refined ideas.
+      \item All parameters are optimizable: From number of features, to constant added at the end of prediction. Sort by 1) importance, 2) feasibility and understanding.
+      \subitem Important to consider the downstream effects from a parameter change. They are not all independent! 
+  \end{itemize}
+\item Dmitry Altukhov
+  \begin{itemize}
+    \item Preprocess your data and store smartly - has huge effect on time!
+      \subitem convert csv/txt to hd5/npy
+      \subitem include basic preprocessing like label encoding and joining additional data
+      \subitem \underline{ downcast everythin from 64 bit array to 32 bit array  - save memory and time}
+    \item Don't start with a complicated cross validation scheme - use holdout at first
+    \item use early stopping! its great.
+    \item Initial model: lightgbm
+      \subitem find reasonably good parameters
+      \subitem evaluate features
+    \item Switch to tuning models, ensembling and stacking only when satisfied with feature engineering!
+    \item fast and dirty is always better: don't code too much. Hard to change.
+      \subitem MY COMMENT: {there must be a way to code plenty but not get stuck}
+  \end{itemize}
+\item Mikhail Tofimov
+  \begin{itemize}
+    \item Start witha primitive solution to debug full pipeline - from reading data to creating submission
+    \item Start with RF instead of GBDT - faster and less tuning
+    \item Keep good software practices
+      \begin{itemize}
+	\item use good variable names
+	\item keep research reproducible (fix seeds, comment, use VCS)
+	\item reuse your code! - features should be prepared and transformed by the same code during train and test (hard to debug failure to do this)
+      \end{itemize}
+    \item read scientific articles realated to your competition
+  \end{itemize}
+\item Dmitry Ulyanov
+  \begin{itemize}
+    \item Monitor forums and kernels
+    \item start with quick EDA
+    \item check for leakages
+    \item come up with validation process that matches LB score
+    \item add features in bulk, put into XGBoost and analyse
+    \item when tuning, achieve overfit first and then dial back
+    \item Keep code clean
+    \item VIP: \underline{\bf restart notebooks} long execution history leads to many global vars, which leads to bugs.
+    \item clean code
+    \item use git
+    \item create separate notebook for each submission - use them as scripts (i.e. restart kernel and run from top to bottom)
+    \item use macros!
+    \item create a custom library with frequently used functions and classes
+  \end{itemize}
+\end{itemize}
+
+\section{Competition Pipeline - Mario Michailidis}
+\begin{itemize}
+  \item Day 1: understand problem, days 2-3: EDA, day 4: define CV strategy, Days 5-(n-4): feature engineering and model building, Day n-3: explore kernels, last 3 days: ensembling and stacking
+  \item VIP: ignore outside world for a while - only read other peoples approaches towards the end.
+  \item has different anaconda environment for each competition
+  \item EDA
+    \begin{itemize}
+      \item compare training  vs test distribution for each variable
+      \item plot feature vs target and vs time (if avaialbe) for each feature
+      \item create crosstabs ??
+      \item bin numerical features
+      \item try to find strange correlations and  non-linearities related to target variable
+    \end{itemize}
+  \item CV is extremely important (repeats what has already been said above)
+  \item Feature Engineering
+    \begin{itemize}
+      \item Image classification: Scaling, shifting, rotation, CNNs
+      \item Sound classification: Fourier, MFCC, specgrams?, scaling
+      \item Text Classification: TF-idf, SVD, stemming, speel check, stop word removal, x-grams
+      \item Time Series: Lags, weighted averagin, exponential smoothing (see walmart recruitment)
+      \item Categorical: Target enc, frequency, one-hot encode, orginal, label encoding (see Amazon employee)
+      \item Numerical: scaling, binning, derivatives, outlier removals, dimensionality reduction
+      \item Interactions: Multiplications, divisions, group-by factors, concatenations
+      \item Recomenders: features based on transactional history, item popularities, frequencos of purchas
+    \end{itemize}
+  \item VIP: This process can be automated, using selection with cross validation
+  \item Modeling
+    \begin{itemize}
+      \item Image Classification: CNN (Resnet, VGG, denseNet)
+      \item Sound Classification: CNN, (CRNN), LSTM
+      \item Text Classification: GBMs, Linear, DL, Naiver Bayes, KNNs, LibFM, LibFFM
+      \item Time Series: Autoregressive Models, ARIMA, linear, GBMs, DL, LSTMS
+      \item \dots 
+    \end{itemize}
+  \item First tune each individual model, then ensemble
+  \item Ensembing
+    \begin{itemize}
+      \item Different ways to combine, from averaging to stacking
+      \item smaller data requires simplers ensembling techniques (like averaging)
+      \item helps to average a few low-correlated (a la pearson) predictions with good scores
+      \item bigger data can use stacking - stacking basically repeats the modeling process, using model outputs as inputs for next stage
+	\subitem can be automated
+    \end{itemize}
+  \item Tips on collaboration
+    \begin{itemize}
+      \item It makes it way more fun
+      \item you learn more
+      \item you score better (cover more ground, get diverse perspectives)
+      \item work spearately for a while after CV has been setup
+      \item start with people around your rank
+    \end{itemize}	
+  \item Final tips (for kaggle)
+    \begin{itemize}
+      \item you never really lose. You always gain knowledge, experience, etc
+      \item imagine it is a game (like an RPG)
+      \item kaggle community is the most helpfull community
+      \item after competition, read other peoples successful approaches
+      \item create notebook with useful methods, and update
+    \end{itemize}
+\end{itemize}
+
+\section{Notebook Macros}
+\begin{itemize}
+  \item to crea a macro
+    \begin{itemize}
+      \item put some code you want to store in a cell and run it
+      \item {\brown \%macro -q $<$name$>$ $<$cellNumber$>$}
+      \item {\brown \% store $<$name$>$} -- sotres in jupyter's global memory
+      \item restsrt kernel, load with: {\brown \%store -r $<$name$>$}
+    \end{itemize}
+  \item can set auto restore in .ipython-profile (must create it)
+  \subitem   {\brown !echo ``c = get\_config()$\backslash\backslash${}nc.StoreMagics.autorestore=True'' \\ $>$ $\sim$/.ipython/profile\_default/ipython-config.py}
+\end{itemize}
+
+\section{Extra Reading - Jupyter Shortcuts}
+\begin{itemize}
+  \item Jupyter by default prints only last line in cell; can change to print every var/statement in its one line
+    \subitem {\brown  From Ipython.core.interactiveshell import InteractiveShell; InteractiveShell.ast\_node\_interactivity = ''all''}
+    \subitem To have this be default: in $\sim/.ipython/profile-default/ipython-config.py$ write
+    \subitem {\brown c = get\_config}
+    \subitem {\brown c.InteractiveShell.ast\_node\_interactivity = ''all''}
+  \item Usefull magics
+    \begin{itemize}
+      \item \%run
+      \item \%load - replace cell with content of external script
+      \item \%store - allows passing vars between notebooks (\%sore mydata; del mydata; \%store -r mydata (in other notebook))
+      \item \%who - lists all vars in global scope
+      \item \%writefile - saves content of a cell to external file
+	\subitem \%\%writefile pythoncode.py (to save contents of current cell)
+      \item \%pycat pythoncode.py - puts concent of file in \dots ?
+      \item \$prun some\_func() - profiler
+      \item \%pdv - interface with python debugger
+      \item run code from different kernel by starting cell with \%\%$<$kernel$>$ - options: bash, HTML, python2, python3, R, \dots
+      \item multi cursor support (like submlime) - hold alt
+    \end{itemize}
+\end{itemize}
+
+\section{Advanced Feature Engineering II}
+\begin{itemize}
+  \item Statistics and distance based features
+    \begin{itemize}
+      \item Basic idea is to not treat each data point indepentely
+      \item take a feature, groupby another and compute statistics (can group by several other categories)
+      \item If no categories to groupby, can use nearest neighbors
+      \item most common example comes from property pricing: use neighbors in the geographical sense - compute average price, number in neighborhood, etc.
+      \item howeber, can still apply neihbor concept in abstract space
+	\subitem useful distance calculation - {\bf bray-curtis metric}
+	$$ \sum \frac{|u_i - v_i|}{|u_i + v_i|} $$
+      \item his approach: mean of 5, 10, 15, 500, 2000 neaighbors; also mean distance to 10 closest; mean distance to 10 closest with target 1; etc.
+    \end{itemize}
+  \item Matrix Factorization for feature extraction
+    \begin{itemize}
+      \item typical example: movie recomendation.
+	\subitem have data set $R$  be users $\times$ movie, and values are ratings (sparse)
+	\subitem assume can decompose $R$ into matrix product of $U$ which is users $\times$ some features, and $M$ wich is those features $\times$ Movies.
+	\subitem after imposing some restrictions on this decomposition, can the find an optimal one according to some objective (see SVD)
+	\subitem some of these features can sometimes be interpreted, like movie sadness, etc, but generally these are abstract.
+      \item this is a dimensional reduction technique; but can be used simply to get new representation.
+      \item it is a lossy transformation
+      \item in sklearn: SVD, PCA, TruncatedSVD (good with sparse matrices), Non-negative Matrix Factorization (NMF) (very useful for decision trees, because ends p very boxy)
+      \item these are similar to linear models, so same tricks apply. i.e first log tx the data, etc.
+      \item VIP: Must use same transformation on all parts of the data.
+	\subitem wrong way:
+	\begin{codesnip}{\brown}
+	  pca = PCA(5) \\
+	  xTrainPCA = pca.fit\_transform(xTrain)\\
+	  xTestPCA = pca.fit\_transform(xTest)\\
+	\end{codesnip}
+	\subitem right way
+	\begin{codesnip}{\brown}
+	  xAll = np.concatenate([xTrain, xTest]) \\
+	  pca.fit(xAll) \\
+	  xTrainPCA = pca.transform(xTrain) \\
+	  xTestPCA = pca.transform(xTest) 
+	\end{codesnip}
+	{\color{red} I really need to think about this. this is clearly peeking into the future, to come up with the transformation. But the not peeking way seems worse because the transformations would be different and variables would mean different things!}
+    \end{itemize}
 \end{itemize}
 
 \end{document}

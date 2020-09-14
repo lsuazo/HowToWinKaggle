@@ -21,8 +21,11 @@
 * [2020/9/9] more indicators, xgb 1000 rds, max_depth 5, eta 0.1  - 2.40032
 	- clipped to 100: 1.54944
 	- clipped to 50: 1.21521,
-	- clipped to 20: 1.04913 ====>  CURRENT BEST
+	- clipped to 20: 1.04913 
 	- clipped to 10:  1.04959
+* [2020/9/13] include kmean group feats, xgb 100 rds, max depth 10, eta 0.1 - 2.53709
+	- clipped to 20: 1.02051 ====>  CURRENT BEST 
+		* xgb_depth10_rounds100_eta0p1_moreFeatures_clipped20.csv
 
 
 
