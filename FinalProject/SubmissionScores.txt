@@ -24,8 +24,12 @@
 	- clipped to 20: 1.04913 
 	- clipped to 10:  1.04959
 * [2020/9/13] include kmean group feats, xgb 100 rds, max depth 10, eta 0.1 - 2.53709
-	- clipped to 20: 1.02051 ====>  CURRENT BEST 
+	- clipped to 20: 1.02051 
 		* xgb_depth10_rounds100_eta0p1_moreFeatures_clipped20.csv
+* [2020/9/14] include kmean and shop cat interaction, xgb 400, max depth 10, eta 0.025 - 2.45140
+	- clipped to 20: 1.01337 ====>  CURRENT BEST 
+	- depth 20 no clip: 2.47118
+	- depth 20 yes clip:  1.01544
 
 
 

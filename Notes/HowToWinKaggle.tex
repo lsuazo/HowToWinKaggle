@@ -961,6 +961,39 @@ Gradient Boosting Hyperparameters :
 	\end{codesnip}
 	{\color{red} I really need to think about this. this is clearly peeking into the future, to come up with the transformation. But the not peeking way seems worse because the transformations would be different and variables would mean different things!}
     \end{itemize}
+  \item Feature Interaction
+    \begin{itemize}
+      \item approach 1 -  just concatenate values
+      \item approach 2 - first apply OHE to both independently, then multiply matrices [multiply each col from first encoding, by each col of second]
+      \item both results are practically the same
+      \item can apply to real values features too, just multiply them
+      \item tree based methods have a hard time reproducing these, so it is good to include them in feature space
+      \item to moderate: 1) do feature seletion (prefered) 2) do dimensional reduction
+      \item His approach: first to all pairwise sums, fit rf, get most important. Then do all pairwose muls, fit rf, get most important, then prod, then div. Collect and join with original features.
+      \item Extract higher orded interactions into categorical features from decision trees:
+	\begin{itemize}
+	  \item from what I gather, fit a (to target variable) and create a categorical variable mapping each leaf of the tree into a binary feature.
+	  \item {\color{red} This seems to me as basically writing the answer down in a categorical variable\dots?}
+	  \item in sklearn, {\brown tree\_model.apply()} - takes input feature matrix and returns corresponding index (??) target of leaf
+	  \item in xgboost, {\brown booster.predict(pred\_leaf = True)}
+	\end{itemize}
+    \end{itemize}
+  \item t-SNE
+    \begin{itemize}
+      \item non-linear method of dimensionality reduction - tries to project points from high dimension into a low dim space in such a way that the distances between points are approximately preserved.
+      \item widely used in exploratory data analysis, but \underline{very sensitive} to hyperparameters
+        \subitem can also be used to obtain new features
+      \item main parameter is {\bf perplexity}
+      \item in practice:
+	\subitem transform train and test together
+	\subitem time consuming - if $>500$ features, probably best to do dim rec first
+      \item sklearn has implementation, but \underline{much more efficient one in a python package called tsne}
+    \end{itemize}
+\end{itemize}
+
+\section{Extra readings}
+\begin{itemize}
+  \item
 \end{itemize}
 
 \end{document}
