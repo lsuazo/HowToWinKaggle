@@ -30,6 +30,8 @@
 	- clipped to 20: 1.01337 ====>  CURRENT BEST 
 	- depth 20 no clip: 2.47118
 	- depth 20 yes clip:  1.01544
+* [2020/9/15] include month decomp features, xgb 100 rds, max depth 10, eta 0.1 - 2.98452
+	- clipped to 20: 1.03141
 
 
 
