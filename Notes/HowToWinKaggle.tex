@@ -1077,4 +1077,20 @@ Gradient Boosting Hyperparameters :
 
 \end{itemize}	
 
+\chapter{Project Issues}
+\begin{itemize}
+  \item I was unable to get the prediction strength necesary to pass the assignment. Perhaps I will come back to it some months down the line when I am better at this.
+  \item Problems (real or supposed)
+    \begin{itemize}
+      \item I never did any real ensembling - however, I saw other people submit solutions that were plenty good without ensembling
+      \item I ended up with a relatively complicated CV scheme, where I had a generate monthly data function, that I called in my rolling cross validator, stacked several months and then fit. This might have been a good idea, but it was difficult to work with, trouble shoot and change as the need arose. It was perhaps not the best strategy.
+	\subitem I think I ended up doing this, because I pivoted data to (shop,item) cross month - this way I could do rolling stats, ewms, etc. very easily. But I think in the end, it made my CV much more complicated than other people who simply kep it all stacked and just split at a given row.
+	\subitem This also made it difficult so systematically tune hyperparamters -  I should have made it simpler, and used the pipelines and tunning methodologies available.
+      \item This pivoting also introduced alot of NaN data, that was not there to begin with, which then took epiciycles to remove - DONT PIVOT if data is not (nearly) complete
+      \item I ignored the Russian names (at first), but there was considerable data in these, city, type, etc. Perhaps I should have worked harder here.
+      \item At first I didn't add relative change indicators - compare an items price to its rolling mean, normalized by that mean (or a shops revenue, etc.). These, and diffs of these were very important. I believe I did not explore this space enough. \underline{Why were these so important; and distinct from lagged stats?}
+      \item I ignored some things that others called outliers - this seems like it was a considerable mistake
+    \end{itemize}
+  \item In the end, I never figured out what was the biggest problem - I was unable to fix my work. I evaluated others work, but they were mostly variants on a the same theme, a notebook posted in kaggle. While I tried to implement some of the things I saw in these, I must have still missed something.
+\end{itemize}	
 \end{document}
