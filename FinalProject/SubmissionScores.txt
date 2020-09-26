@@ -32,6 +32,18 @@
 	- depth 20 yes clip:  1.01544
 * [2020/9/15] include month decomp features, xgb 100 rds, max depth 10, eta 0.1 - 2.98452
 	- clipped to 20: 1.03141
+* [2020/9/17] - simple linear model used for stacking - 3.14446
+	- clipped to [0,20]: 1.08250
+* [2020/9/18] - took clipped xgb (0.7) plus clipped linear model (0.3) - 1.06667
+	- clipped t0 [0,20]:  1.02651
+* [2020/9/20] - xgb 100_20_0.1 stacked on LR model - 2.80726
+	- clipped to [0,20] - 1.02615
+* [2020/9/22] - mod = xgb_model(num_boost_round=300, max_depth=15, eta=0.025, gpu_id=0, tree_method='gpu_hist', min_child_weight=3,
+                gamma=0.1, colsample_bytree=0.70, subsample=0.85, reg_alpha=1)
+		xgbFinal = rolling_cross_validation(mod, months[19:], num_lagged_values=0, num_stack_months=13, fit_final=True)
+		*SCORE =  2.67696,
+		- clip 20 - 1.02326
+		- clip 15 - 1.02064
 
 
 

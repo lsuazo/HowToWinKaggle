@@ -993,7 +993,88 @@ Gradient Boosting Hyperparameters :
 
 \section{Extra readings}
 \begin{itemize}
-  \item
+  \item feature transfomration with ensemble of tree
+    \begin{itemize}
+      \item fit a bunch of trees (random trees, random forrest, GBDT, etc.)
+      \item each leaf of each tree assigned a feature index {\color{red} (so each tree is a new feature?)}
+      \item pass a sample through each tree, and give it a 1 for leaf (in each tree) it falls into. {\color{red} (So basically OHE each tree-feature?)}
+    \end{itemize}
+  \item sklearn
+    \begin{itemize}
+      \item PCA centers, but does not scale before applying SVD
+      \item PCA only supports batch processing - for bigger data use IncrementalPCA
+    \end{itemize}
+  \item Factor Analysis
+    \begin{itemize}
+      \item data  $X = \{x_1, x_2,\dots, x_n\}$
+      \item A very simple continuous latent variable model is
+	$$ x_i = Wh_i + \mu + \epsilon $$
+	where the $h_i$ are the unobserver/latent variable, $\mu$ is an offset vector and $\epsilon \sim N(0,\Psi)$ is noise.
+	\subitem can also be written as $X  = WH + M + E$ (that is, we decomposed X)
+	\subitem can also write: $P(x_i | h_j) = N(Wh_j + \mu, \Psi)$
+	\subitem {\color{red} I think notation is bad in the main equation above - $x_i = \sum_j W_{ij}h_j +  \dots
+	\mu_i? + \epsilon_i? \dots$}
+      \item Usual additional assumptions
+	\begin{itemize}
+	  \item $\Psi = \sigma^2 I$ $\rightarrow$ leads to probabilistic PCA
+	  \item $\Psi = diag(\psi_1, \psi_2, \dots, \psi_n)$ $\rightarrow$ leads to factor analysis
+	\end{itemize}
+      \item main advantage of factor analysis over PCA is that it can model variance in every direction of the input space independently
+    \end{itemize}
 \end{itemize}
+
+\section{Ensembling}
+\begin{itemize}
+  \item  Ensemble modelling := combine different ML models to get a better result.
+  \item Can simply average (simple, or weighted)
+  \item Bagging: averageing slightly different versions of the same model (random forest does this by definiion)
+    \subitem reduces error due to variance (doesn't help with bias)
+    \subitem he always uses bagging, for any paramter in the model (even seed) - every individual model used later in the ensembling is already a bagged model
+  \item Boosting := form of weighted averaging models where each model is built sequentially via taking into account past model performance.
+  \item two main types: 1) weight based, 2) Residual error
+  \begin{itemize}
+    \item fit, predict, generat new weight column: 1 + abs error (many other ways to do this); fit new model using same features and target vars, but including new weight
+    \item $pred N = pred0 * \eta + pred1 * \eta + \dots$  {\color{red}(should it not be increasing powers of $\eta$?)}
+      \item Rule of thumb: Typically start with a fixed number of estimators, say 100, and then find the best learning rate using CV - then more or less keep their product fixed.
+    \end{itemize}
+  \item Residual based boosting has been incredibly dominant.
+    \begin{itemize}
+      \item fit model, predict, and calculate error (not abolute {\color{red}(??)})
+      \item then let that error be the new target variable
+      \item Final pred = pred0 + pred1 + \dots
+    \end{itemize}
+  \item favorit implementations: Xgboost, LightGBM (lightning fast), H2O's GBM, catboost, sklearn GMB (can use any sklearn estimator as base)
+\end{itemize}
+
+\section{Stacking}
+\begin{itemize}
+  \item Stacking:= Making predictions of a number of models in a hold-out-set and then using a diferent meta model to train on these predictions.
+    \subitem don't use input data for meta model anymore, but then modeling proceeds as usual
+  \item VIP: in time series, stacking must respect time.
+  \item VIP: Diversity is as important as performance - can even use weak models, so long as they bring something new.
+    \subitem get diversity from: different algorithms, different features, different feature transdormations
+  \item Meta model is usually very modest - simpler; lower depth, less trees, etc.
+  \item He (Marios) talks about his project StackNet
+    \subitem uses neural network style architecture - but can't really use backprob b/c not all differentiable, so uses ``stacking'' (?) to link each layer
+\end{itemize}
+
+\section{Ensembling Tips and Tricks}
+\begin{itemize}
+  \item Diversity based on algo
+    \subitem 2-2 GBDM, 2-3 NN, 1-2 extra trees, 1-2 linear models, 1-2 KNN models, 1 factorization maching, 1 SVM with non linear kernel
+  \item diversity based on input data
+    \subitem categorical feats: OHE, label encode, taret encode
+    \subitem numerical features: yes or no outlier removal, bin, derivatives, percentiles, scaling
+    \subitem interactions: +-*/, groupby stats, unsupervised learning (k-means, SVD, PCS) 
+  \item subseqquent level: tree depth of 2 or 3, or NN with 1 or 2 layers
+  \item feature engineering
+    \subitem create pairwise differences between meta features
+    \subitem row-wise statistics
+    \subitem employ standards feature selection techniques
+  \item rule of thumb - for every 7.5 models in previous level, add 1 in meta
+  \item VIP: be very mindful of target leakage
+  \item Oweh Zhang: Careful with leakage when stacking - model one will be given alot of weight. Solution, k-fold style data split.
+
+\end{itemize}	
 
 \end{document}

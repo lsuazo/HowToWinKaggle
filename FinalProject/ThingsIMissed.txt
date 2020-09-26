@@ -1,0 +1,32 @@
+* get city names and shop type from shop names
+* trend features: 
+	- for each (item,month) compute mean price
+	- then computed rolling mean for window 12
+	- then subtracted current mean from rolling mean and divided by rolling mean - this was one feature
+	- then diffed that to create another feature
+	- did the same for revenue for each store
+	- These 4 indicators are top or close to it
+	- TODO: should do the same for revenue for each item
+* got category type from category names 
+	- this didn't even make it to top 20 indicators, but was in top 40
+* remove shops with not enough data
+	- only sold first few months, or stop selling for a while
+* drop more data introduced by the pivoting
+	- this appears to be important
+* cut some useless indicators
+	- speeds it up alot, not alot of help in scores (need to retune)
+* stack more months
+	- not alot of help in scores - surprising, need to retune
+* add rel_revenue (trend in revenue per item) and its diff version
+	- both went up to top 20
+* Useful: to cross validation and hyper parameter search in organized fashion - find a pipeline
+	- collect errors and plot; use trends and not just values to make decision
+
+TODO:
+	- clip objective also
+	- Try clipping to only shops in the test set?
+	- create shop type - cat type interaction
+	- add more "trend" or relative change indicators
+
+LESSON:
+	- dont build out complex shit! my CV strategy was too dofficult to troubleshoot

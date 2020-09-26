@@ -1,9 +1,0 @@
-* if using pd.to_datetime, must pass format - otherwise it gets confused
-* there appears to be missing data
-	- look at most popular item accross all shops, gaps in the plot
-* december sales and jan sales seem outliers (too high too low respectively)
-	- at least in considering most popular item
-	- should consider removing these at first
-* clipping counts makes a huge difference
-	- ex: Oct2015 pred wihtout clip scored 8.something, with clip [0,20] scored 1.25011
-	- this tells me to cerate clipped predictors

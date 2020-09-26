@@ -1,0 +1,179 @@
+add how current price of that item relates go global average (of all items, or of all same items accross shops?)
+add how current month revenue relates to global average
+-------------------------------------------------------------------------------------------------------------
+
+Cleaning:
+- remove item with day count > 1000
+- remove item with price > 100,000
+- remove all negative price items and zero out all refunds
+
+shops - check for duplciate shops
+0 = 57
+1 = 58
+10 = 11
+
+shops have city and name - split and create new category
+- split by space, then do label encoding?
+
+apparently items have a type_code split(' ')[0]
+* there is also a type and a subtype defined by the '-'
+
+
+* clean the item names (many repeated?)
+	- lower case, remove special characters, normalize spaces
+
+* features
+	- delta price lag (groupby date and item_id, take mean price, and lag it)
+	- date block num 
+	- date_shop_avg_item_cnt
+
+model = XGBRegressor(
+    max_depth=10,
+    n_estimators=1000,
+    min_child_weight=0.5, 
+    colsample_bytree=0.8, 
+    subsample=0.8, 
+    eta=0.1,
+    tree_method='gpu_hist',
+    seed=42)
+
+--------------------------------------------------------
+
+from googletrans import Translator
+
+ts = time.time()
+categories['item_category_name'] = categories['item_category_name'].transform(lambda x: translator.translate(x, src='ru', dest='en').text)
+categories.to_csv('./competitive-data-science-predict-future-sales/en_cats.csv', index=False)
+print(categories.head())
+time.time() - ts
+
+print(shops[shops.shop_id.isin([0, 57])]['shop_name'])
+print(shops[shops.shop_id.isin([1, 58])]['shop_name'])
+print(shops[shops.shop_id.isin([11, 10])]['shop_name'])
+print(shops[shops.shop_id.isin([40, 39])]['shop_name'])
+print(shops[shops.shop_id.isin([40, 39])]['shop_name'])
+
+
+#keep only categories with more than three appeareances
+category = []
+for cat in categories['main_category'].unique():
+    if len(categories[categories.main_category == cat]) >= 3:
+        category.append(cat)
+categories.main_category = categories.main_category.apply(lambda x: x if (x in category) else 'other')
+
+
+shops['city'] = shops['shop_name'].str.split(' ').map(lambda x: x[0]) # Select first word
+shops['type'] = shops['shop_name'].str.split(' ').map(lambda x: x[1]) # Select second word
+shops.head()
+
+#keep only cities with more than three appeareances
+category = []
+for cat in shops.city.unique():
+    if len(shops[shops.city == cat]) >= 3:
+        category.append(cat)
+shops.city = shops.city.apply( lambda x: x if (x in category) else 'other' )
+
+
+------
+
+#Text Features
+feature_cnt = 25
+tfidf = feature_extraction.text.TfidfVectorizer(max_features=feature_cnt)
+items['item_name_len'] = items['item_name'].map(len) #Lenth of Item Description
+items['item_name_wc'] = items['item_name'].map(lambda x: len(str(x).split(' '))) #Item Description Word Count
+txtFeatures = pd.DataFrame(tfidf.fit_transform(items['item_name']).toarray())
+cols = txtFeatures.columns
+for i in range(feature_cnt):
+    items['item_name_tfidf_' + str(i)] = txtFeatures[cols[i]]
+items.drop(columns='item_name', inplace=True)
+items.head()
+
+
+
+---------------------------------------
+
+shops.loc[shops.shop_name == 'Сергиев Посад ТЦ "7Я"', 'shop_name'] = 'СергиевПосад ТЦ "7Я"'
+shops['city'] = shops['shop_name'].str.split(' ').map(lambda x: x[0])
+shops.loc[shops.city == '!Якутск', 'city'] = 'Якутск'
+shops['city_code'] = LabelEncoder().fit_transform(shops['city'])
+shops = shops[['shop_id','city_code']]
+
+cats['split'] = cats['item_category_name'].str.split('-')
+cats['type'] = cats['split'].map(lambda x: x[0].strip())
+cats['type_code'] = LabelEncoder().fit_transform(cats['type'])
+# if subtype is nan then type
+cats['subtype'] = cats['split'].map(lambda x: x[1].strip() if len(x) > 1 else x[0].strip())
+cats['subtype_code'] = LabelEncoder().fit_transform(cats['subtype'])
+cats = cats[['item_category_id','type_code', 'subtype_code']]
+
+items.drop(['item_name'], axis=1, inplace=True)
+
+ts = time.time()
+
+model = XGBRegressor(
+    max_depth=7,
+    n_estimators=1000,
+    min_child_weight=300, 
+    colsample_bytree=0.8, 
+    subsample=0.8, 
+    gamma = 0.005,
+    eta=0.1,    
+    seed=42)
+
+model.fit(
+    X_train, 
+    Y_train, 
+    eval_metric="rmse", 
+    eval_set=[(X_train, Y_train), (X_valid, Y_valid)], 
+    verbose=10, 
+    early_stopping_rounds = 40,
+    )
+
+time.time() - ts
+
+-----
+
+seems like people use lag features and trend features, what are these trend features?
+
+ts = time.time()
+group = train.groupby(['item_id']).agg({'item_price': ['mean']})
+group.columns = ['item_avg_item_price']
+group.reset_index(inplace=True)
+
+matrix = pd.merge(matrix, group, on=['item_id'], how='left')
+matrix['item_avg_item_price'] = matrix['item_avg_item_price'].astype(np.float16)
+
+group = train.groupby(['date_block_num','item_id']).agg({'item_price': ['mean']})
+group.columns = ['date_item_avg_item_price']
+group.reset_index(inplace=True)
+
+matrix = pd.merge(matrix, group, on=['date_block_num','item_id'], how='left')
+matrix['date_item_avg_item_price'] = matrix['date_item_avg_item_price'].astype(np.float16)
+
+lags = [1,2,3,4,5,6]
+matrix = lag_feature(matrix, lags, 'date_item_avg_item_price')
+
+for i in lags:
+    matrix['delta_price_lag_'+str(i)] = \
+        (matrix['date_item_avg_item_price_lag_'+str(i)] - matrix['item_avg_item_price']) / matrix['item_avg_item_price']
+
+def select_trend(row):
+    for i in lags:
+        if row['delta_price_lag_'+str(i)]:
+            return row['delta_price_lag_'+str(i)]
+    return 0
+    
+matrix['delta_price_lag'] = matrix.apply(select_trend, axis=1)
+matrix['delta_price_lag'] = matrix['delta_price_lag'].astype(np.float16)
+matrix['delta_price_lag'].fillna(0, inplace=True)
+
+
+
+fetures_to_drop = ['item_avg_item_price', 'date_item_avg_item_price']
+for i in lags:
+    fetures_to_drop += ['date_item_avg_item_price_lag_'+str(i)]
+    fetures_to_drop += ['delta_price_lag_'+str(i)]
+
+matrix.drop(fetures_to_drop, axis=1, inplace=True)
+
+time.time() - ts
